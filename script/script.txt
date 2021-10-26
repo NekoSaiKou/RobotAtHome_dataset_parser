@@ -1,0 +1,3 @@
+ ./build/data_parser ~/Datasets/Robot\@HomeDataset/ ./dataset.yaml
+
+  ./build/data_parser_ros ~/Datasets/Robot\@HomeDataset/ ./dataset.yaml

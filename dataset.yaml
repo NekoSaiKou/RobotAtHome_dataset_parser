@@ -4,7 +4,14 @@
 # Dataset Parameters. Adjust them!
 #--------------------------------------------------------------------------------------------
 
+# Supported session: alma-s1 anto-s1 pare-s1 rx2-s1 sarmis-s1 sarmis-s2 sarmis-s3
 Dataset.session: anto-s1
-Dataset.sensor_type: rgbd_data
-Dataset.sensor_id: RGBD_1
-Dataset.scene: fullhouse1_rgbd
+
+# Supported sensor type: rgbd_data laser_scans
+Dataset.sensor_type: laser_scans
+
+# Supported sensor id: RGBD_1 RGBD_2 RGBD_3 RGBD_4 HOKUYO1
+Dataset.sensor_id: HOKUYO1
+
+# Supported scene: bathroom1 bedroom1 fullhouse1 kitchen1 livingroom1 masterroom1
+Dataset.scene: fullhouse1
