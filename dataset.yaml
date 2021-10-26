@@ -1,0 +1,10 @@
+%YAML:1.0
+
+#--------------------------------------------------------------------------------------------
+# Dataset Parameters. Adjust them!
+#--------------------------------------------------------------------------------------------
+
+Dataset.session: anto-s1
+Dataset.sensor_type: rgbd_data
+Dataset.sensor_id: RGBD_1
+Dataset.scene: fullhouse1_rgbd
