@@ -12,7 +12,7 @@
 
 using namespace std;
 
-void LoadImages(vector<int> &vnFileindex, vector<double> &vlTimestamps, string strSessionFolder, string strSceneName, string strSensorID)
+void LoadImages(vector<int> &vnFileindex, vector<double> &vdTimestamps, string strSessionFolder, string strSceneName, string strSensorID)
 {
     string fname(strSessionFolder+strSceneName+".txt");
     ifstream fSequence(fname.c_str());
@@ -46,15 +46,15 @@ void LoadImages(vector<int> &vnFileindex, vector<double> &vlTimestamps, string s
         if(sSensor_label.compare(strSensorID)==0)
         {
             vnFileindex.push_back(nObservation_id);
-            vlTimestamps.push_back(double(lTstamp*1e-7));
+            vdTimestamps.push_back(double(lTstamp*1e-7));
         }
     }
     fSequence.close();
 }
 
-void LoadScans(vector<int> &vnFileFolder, vector<int> &vnFileindex, vector<double> &vlTimestamps, string strSequenceFolder, string strSensorID)
+void LoadScans(int LiDAR_Start_Sequence, vector<int> &vnFileFolder, vector<int> &vnFileindex, vector<double> &vdTimestamps, string strSequenceFolder, string strSensorID)
 {
-    int folder_index = 1;
+    int folder_index = LiDAR_Start_Sequence;
     while(true)
     {
         string fname(strSequenceFolder+to_string(folder_index)+"_hokuyo_processed.txt");
@@ -63,7 +63,7 @@ void LoadScans(vector<int> &vnFileFolder, vector<int> &vnFileindex, vector<doubl
         if(fSequence.fail())
         {
             cout << "[Robot@Home Parser] Scanning " << fname << " ...Failed" << endl;
-            cout << "[Robot@Home Parser] Load " << folder_index-1 << " Sequences" << endl;
+            cout << "[Robot@Home Parser] Load " << folder_index-LiDAR_Start_Sequence << " LiDAR Sequences" << endl;
             break;
         }
         else
@@ -92,7 +92,7 @@ void LoadScans(vector<int> &vnFileFolder, vector<int> &vnFileindex, vector<doubl
             {
                 vnFileFolder.push_back(folder_index);
                 vnFileindex.push_back(nObservation_id);
-                vlTimestamps.push_back(double(lTstamp*1e-7));
+                vdTimestamps.push_back(double(lTstamp*1e-7));
             }
         }
         fSequence.close();
@@ -193,8 +193,8 @@ cv::Mat PlotScans(float Max_range, float Min_range, vector<float> &vfRanges, int
     float angle_increment = 0.352;
     float angle_start = -120.032;
 
-    cv::circle(scan, center, 1, cv::Scalar(0,0,0), 4);
-    cv::line(scan, center, center+cv::Point2f(10,0), cv::Scalar(0,0,0), 2);
+    cv::circle(scan, center, 5, cv::Scalar(0,0,0), -1);
+    cv::line(scan, center, center+cv::Point2f(20,0), cv::Scalar(0,0,0), 3);
     for(int i=0; i < vfRanges.size(); i++)
     {
         float range = vfRanges[i];
@@ -233,67 +233,72 @@ int main(int argc, char **argv)
     string DatasetRoot(argv[1]);
     string Session = fSettings["Dataset.session"];
     string Sensor = fSettings["Dataset.sensor_type"];
-    string Sensor_ID = fSettings["Dataset.sensor_id"];
     string TargetScene = fSettings["Dataset.scene"];
     
-    // Combine parameters to generate full path
-    string SessionFolder(DatasetRoot+"/Robot@Home-dataset_"+Sensor+"-plain_text-all/Robot@Home-dataset_"+Sensor+"-plain_text-"+Session+"/"+Session+"/");
+    // Create LiDAR and RGBD data path
+    string LiDAR_Sensor_ID = fSettings["Dataset.laser_sensor_id"];
+    string LiDAR_sensor("laser_scans");
+    string LiDAR_SessionFolder(DatasetRoot+"/Robot@Home-dataset_"+LiDAR_sensor+"-plain_text-all/Robot@Home-dataset_"+LiDAR_sensor+"-plain_text-"+Session+"/"+Session+"/");
+    string LiDAR_SequenceFolder(LiDAR_SessionFolder+TargetScene+"/");
+    vector<int> vnLiDAR_FolderIndex;
+    vector<int> vnLiDAR_Fileindex;
+    vector<double> vdLiDAR_Timestamps;
+    int LiDAR_Start_Sequence = fSettings["Dataset.laser_start_sequence"];
+
+    string RGBD_Sensor_ID = fSettings["Dataset.rgbd_sensor_id"];
+    string RGBD_sensor("rgbd_data");
+    string RGBD_SessionFolder(DatasetRoot+"/Robot@Home-dataset_"+RGBD_sensor+"-plain_text-all/Robot@Home-dataset_"+RGBD_sensor+"-plain_text-"+Session+"/"+Session+"/");
+    string RGBD_TargetScene(TargetScene + "_rgbd");
+    string RGBD_SequenceFolder(RGBD_SessionFolder+RGBD_TargetScene);
+    vector<int> vnRGBD_Fileindex;
+    vector<double> vdRGBD_Timestamps;
 
     if(Sensor.compare("laser_scans")==0)
     {
-        string SequenceFolder(SessionFolder+TargetScene+"/");
-        // Load Scnas
-        vector<int> vnFolderIndex;
-        vector<int> vnFileindex;
-        vector<double> vlTimestamps;
-        LoadScans(vnFolderIndex, vnFileindex, vlTimestamps, SequenceFolder, Sensor_ID);
+        LoadScans(LiDAR_Start_Sequence, vnLiDAR_FolderIndex, vnLiDAR_Fileindex, vdLiDAR_Timestamps, LiDAR_SequenceFolder, LiDAR_Sensor_ID);
 
-        long lCurrentTimestamp = 0;
-        int nScans = vnFileindex.size();
+        int nScans = vnLiDAR_Fileindex.size();
         for(int i=0; i<nScans; i++)
         {
             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
-            double tframe = vlTimestamps[i];
-            string ScanFolder = SequenceFolder + to_string(vnFolderIndex[i])+"_hokuyo_processed/";
-            string Scanpath = ScanFolder+to_string(vnFileindex[i])+"_scan.txt";
+            double tframe = vdLiDAR_Timestamps[i];
+            string ScanFolder = LiDAR_SequenceFolder + to_string(vnLiDAR_FolderIndex[i])+"_hokuyo_processed/";
+            string Scanpath = ScanFolder+to_string(vnLiDAR_Fileindex[i])+"_scan.txt";
 
             float max_ranges, min_ranges;
             vector<float> vfRanges;
             ReadScans(Scanpath, max_ranges, min_ranges, vfRanges);
             cv::Mat ScanPlot = PlotScans(max_ranges, min_ranges, vfRanges, 60);
             cv::imshow("Scan", ScanPlot);
-            cv::waitKey(1);
+            if(cv::waitKey(1)==27)
+            {
+                break;
+            }
 
             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
             double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
             double T=0;
             if(i<nScans-1)
-                T = vlTimestamps[i+1]-tframe;
+                T = vdLiDAR_Timestamps[i+1]-tframe;
             else if(i>0)
-                T = tframe-vlTimestamps[i-1];
+                T = tframe-vdLiDAR_Timestamps[i-1];
             if(ttrack<T)
                 usleep((T-ttrack)*1e6);
         }
     }
     else if(Sensor.compare("rgbd_data")==0)
     {
-        string rgbd_TargetScene(TargetScene + "_rgbd");
-        string SequenceFolder(SessionFolder+rgbd_TargetScene);
-        // Load Images
-        vector<int> vnFileindex;
-        vector<double> vlTimestamps;
-        LoadImages(vnFileindex, vlTimestamps, SessionFolder, rgbd_TargetScene, Sensor_ID);
+        LoadImages(vnRGBD_Fileindex, vdRGBD_Timestamps, RGBD_SessionFolder, RGBD_TargetScene, RGBD_Sensor_ID);
 
-        long lCurrentTimestamp = 0;
-        int nImages = vnFileindex.size();
+        int nImages = vnRGBD_Fileindex.size();
         for(int i=0; i<nImages; i++)
         {
             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
-            double tframe = vlTimestamps[i];
-            string ImgPrefix = SequenceFolder + "/" + to_string(vnFileindex[i]);
+            double tframe = vdRGBD_Timestamps[i];
+            string ImgPrefix = RGBD_SequenceFolder + "/" + to_string(vnRGBD_Fileindex[i]);
             
             string ImgRGBpath = ImgPrefix+"_intensity.png";
             string ImgDepthPath = ImgPrefix+"_depth.png";
@@ -306,16 +311,106 @@ int main(int argc, char **argv)
 
             cv::imshow("RGB", mImgRGB);
             cv::imshow("Depth", mImgDepth);
-            cv::waitKey(1);
+            if(cv::waitKey(1)==27)
+            {
+                break;
+            }
 
             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
             double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
             double T=0;
             if(i<nImages-1)
-                T = vlTimestamps[i+1]-tframe;
+                T = vdRGBD_Timestamps[i+1]-tframe;
             else if(i>0)
-                T = tframe-vlTimestamps[i-1];
+                T = tframe-vdRGBD_Timestamps[i-1];
+            if(ttrack<T)
+                usleep((T-ttrack)*1e6);
+        }
+    }
+    else if(Sensor.compare("both")==0)
+    {
+        LoadScans(LiDAR_Start_Sequence, vnLiDAR_FolderIndex, vnLiDAR_Fileindex, vdLiDAR_Timestamps, LiDAR_SequenceFolder, LiDAR_Sensor_ID);
+        LoadImages(vnRGBD_Fileindex, vdRGBD_Timestamps, RGBD_SessionFolder, RGBD_TargetScene, RGBD_Sensor_ID);
+
+        // Start show data
+        int nImages = vnRGBD_Fileindex.size();
+        int nScans = vnLiDAR_Fileindex.size();
+        int nData = nImages + nScans;
+        int nIdxImages = 0;
+        int nIdxScans = 0;
+
+        for(int i=0; i<nData; i++)
+        {
+            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+
+            double tImage = vdRGBD_Timestamps[nIdxImages];
+            double tScan = vdLiDAR_Timestamps[nIdxScans];
+            double tframe = 0;
+
+            // If Image is closer, then read image
+            if(tImage < tScan)
+            {
+                tframe = tImage;
+                string ImgPrefix = RGBD_SequenceFolder + "/" + to_string(vnRGBD_Fileindex[nIdxImages]);
+                string ImgRGBpath = ImgPrefix+"_intensity.png";
+                string ImgDepthPath = ImgPrefix+"_depth.png";
+
+                // Load and rotate images
+                cv::Mat mImgRGB = cv::imread(ImgRGBpath.c_str());
+                cv::rotate(mImgRGB, mImgRGB, cv::ROTATE_90_COUNTERCLOCKWISE);
+                cv::Mat mImgDepth = cv::imread(ImgDepthPath.c_str(), cv::IMREAD_ANYDEPTH);
+                cv::rotate(mImgDepth, mImgDepth, cv::ROTATE_90_COUNTERCLOCKWISE);
+
+                cv::imshow("RGB", mImgRGB);
+                cv::imshow("Depth", mImgDepth);
+                nIdxImages++;
+            }
+            else
+            {
+                tframe = tScan;
+                string ScanFolder = LiDAR_SequenceFolder + to_string(vnLiDAR_FolderIndex[nIdxScans])+"_hokuyo_processed/";
+                string Scanpath = ScanFolder+to_string(vnLiDAR_Fileindex[nIdxScans])+"_scan.txt";
+
+                float max_ranges, min_ranges;
+                vector<float> vfRanges;
+                ReadScans(Scanpath, max_ranges, min_ranges, vfRanges);
+                cv::Mat ScanPlot = PlotScans(max_ranges, min_ranges, vfRanges, 60);
+                cv::imshow("Scan", ScanPlot);
+                nIdxScans++;
+            }
+
+            if(cv::waitKey(1)==27)
+            {
+                break;
+            }
+
+            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+
+            double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+            double T=0;
+            // If there are still other data:
+            if(i<nData-1)
+            {
+                double Tnext = 0;
+                if(nIdxImages == nImages)
+                {
+                    Tnext = vdLiDAR_Timestamps[nIdxScans];
+                }
+                else if(nIdxScans == nScans)
+                {
+                    Tnext = vdRGBD_Timestamps[nIdxImages];
+                }
+                else
+                {   
+                    double dRGBNext = vdRGBD_Timestamps[nIdxImages];
+                    double dScanNext = vdLiDAR_Timestamps[nIdxScans];
+                    Tnext = (dRGBNext < dScanNext)?dRGBNext:dScanNext;
+                }
+                T = Tnext-tframe;
+            }
+            else if(i>0)
+                T = ttrack+1;
             if(ttrack<T)
                 usleep((T-ttrack)*1e6);
         }

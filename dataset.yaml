@@ -5,13 +5,20 @@
 #--------------------------------------------------------------------------------------------
 
 # Supported session: alma-s1 anto-s1 pare-s1 rx2-s1 sarmis-s1 sarmis-s2 sarmis-s3
-Dataset.session: anto-s1
+Dataset.session: alma-s1
 
-# Supported sensor type: rgbd_data laser_scans
-Dataset.sensor_type: laser_scans
+# Supported sensor type: rgbd_data laser_scans both
+Dataset.sensor_type: both
 
-# Supported sensor id: RGBD_1 RGBD_2 RGBD_3 RGBD_4 HOKUYO1
-Dataset.sensor_id: HOKUYO1
+# Sensor id could be empty depends on the chosen sensor.
+# Supported laser sensor id: HOKUYO1
+Dataset.laser_sensor_id: HOKUYO1
+# In this dataset, Laser data has one more sequence which usually doesn't have associated RGBD image
+# Set this parameter to skip those laser data.
+Dataset.laser_start_sequence: 2
+
+# Supported rgbd sensor id: RGBD_1 RGBD_2 RGBD_3 RGBD_4
+Dataset.rgbd_sensor_id: RGBD_1
 
 # Supported scene: bathroom1 bedroom1 fullhouse1 kitchen1 livingroom1 masterroom1
 Dataset.scene: fullhouse1
