@@ -25,6 +25,7 @@ target_link_libraries(data_parser ${OpenCV_LIBS})
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
+  cv_bridge
 )
 
 if(catkin_FOUND)

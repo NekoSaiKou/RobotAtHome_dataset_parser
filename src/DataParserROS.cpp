@@ -9,7 +9,9 @@
 #include <cmath>
 
 #include <ros/ros.h>
+#include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/LaserScan.h>
+#include <sensor_msgs/Image.h>
 
 #define PI M_PI
 
@@ -224,7 +226,7 @@ cv::Mat PlotScans(float Max_range, float Min_range, vector<float> &vfRanges, int
     return scan;
 }
 
-void PubScans(ros::Publisher &pub_, float Max_range, float Min_range, vector<float> &vfRanges)
+void PubScans(ros::Publisher &scan_pub_, float Max_range, float Min_range, vector<float> &vfRanges)
 {
     sensor_msgs::LaserScan msg;
 
@@ -241,7 +243,15 @@ void PubScans(ros::Publisher &pub_, float Max_range, float Min_range, vector<flo
     msg.range_max = Max_range;
 
     msg.ranges = vfRanges;
-    pub_.publish(msg);
+    scan_pub_.publish(msg);
+}
+
+void PubImages(ros::Publisher &rgb_pub_, ros::Publisher &d_pub_, cv::Mat &rgb_img, cv::Mat &d_img)
+{
+    sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", rgb_img).toImageMsg();
+    sensor_msgs::ImagePtr msg_d = cv_bridge::CvImage(std_msgs::Header(), "mono16", d_img).toImageMsg();
+    rgb_pub_.publish(msg);
+    d_pub_.publish(msg_d);
 }
 
 int main(int argc, char **argv)
@@ -285,7 +295,9 @@ int main(int argc, char **argv)
     // ROS setup
     ros::init(argc, argv, "RobotAtHome");
     ros::NodeHandle n_;
-    ros::Publisher pub_ = n_.advertise<sensor_msgs::LaserScan>("/scan", 1000);
+    ros::Publisher scan_pub_ = n_.advertise<sensor_msgs::LaserScan>("/scan", 1000);
+    ros::Publisher rgb_pub_ = n_.advertise<sensor_msgs::Image>("/camera/rgb", 1000);
+    ros::Publisher d_pub_ = n_.advertise<sensor_msgs::Image>("/camera/depth", 1000);
 
     if(Sensor.compare("laser_scans")==0)
     {
@@ -304,7 +316,8 @@ int main(int argc, char **argv)
             vector<float> vfRanges;
             ReadScans(Scanpath, max_ranges, min_ranges, vfRanges);
             cv::Mat ScanPlot = PlotScans(max_ranges, min_ranges, vfRanges, 60);
-            PubScans(pub_, max_ranges, min_ranges, vfRanges);
+            PubScans(scan_pub_, max_ranges, min_ranges, vfRanges);
+
             cv::imshow("Scan", ScanPlot);
             if(cv::waitKey(1)==27)
             {
@@ -343,6 +356,8 @@ int main(int argc, char **argv)
             cv::rotate(mImgRGB, mImgRGB, cv::ROTATE_90_COUNTERCLOCKWISE);
             cv::Mat mImgDepth = cv::imread(ImgDepthPath.c_str(), cv::IMREAD_ANYDEPTH);
             cv::rotate(mImgDepth, mImgDepth, cv::ROTATE_90_COUNTERCLOCKWISE);
+
+            PubImages(rgb_pub_, d_pub_, mImgRGB, mImgDepth);
 
             cv::imshow("RGB", mImgRGB);
             cv::imshow("Depth", mImgDepth);
@@ -397,6 +412,8 @@ int main(int argc, char **argv)
                 cv::Mat mImgDepth = cv::imread(ImgDepthPath.c_str(), cv::IMREAD_ANYDEPTH);
                 cv::rotate(mImgDepth, mImgDepth, cv::ROTATE_90_COUNTERCLOCKWISE);
 
+                PubImages(rgb_pub_, d_pub_, mImgRGB, mImgDepth);
+
                 cv::imshow("RGB", mImgRGB);
                 cv::imshow("Depth", mImgDepth);
                 nIdxImages++;
@@ -411,8 +428,8 @@ int main(int argc, char **argv)
                 vector<float> vfRanges;
                 ReadScans(Scanpath, max_ranges, min_ranges, vfRanges);
                 cv::Mat ScanPlot = PlotScans(max_ranges, min_ranges, vfRanges, 60);
-                PubScans(pub_, max_ranges, min_ranges, vfRanges);
-                
+                PubScans(scan_pub_, max_ranges, min_ranges, vfRanges);
+
                 cv::imshow("Scan", ScanPlot);
                 nIdxScans++;
             }
