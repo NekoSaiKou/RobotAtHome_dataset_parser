@@ -236,7 +236,7 @@ void PubScans(ros::Publisher &scan_pub_, float Max_range, float Min_range, vecto
     msg.angle_max = 120.032/180*PI;
     msg.angle_increment = 0.352/180*PI;
 
-    msg.time_increment = 0.00015;
+    msg.time_increment = 0;
     msg.scan_time = 0.1;
 
     msg.range_min = Min_range;
