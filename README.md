@@ -15,3 +15,9 @@ Tools for reading Robot@Home Dataset
             * Session
                 * {6 Scenes}
                 * {6 Scenes}.txt
+
+## How to use
+
+1. Arrange the Robot@Home dataset structure as the format above
+2. Build the executable using the provided script
+3. Enjoy

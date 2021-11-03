@@ -250,6 +250,8 @@ void PubImages(ros::Publisher &rgb_pub_, ros::Publisher &d_pub_, cv::Mat &rgb_im
 {
     sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", rgb_img).toImageMsg();
     sensor_msgs::ImagePtr msg_d = cv_bridge::CvImage(std_msgs::Header(), "mono16", d_img).toImageMsg();
+    msg->header.stamp = ros::Time::now();
+    msg_d->header.stamp = ros::Time::now();
     rgb_pub_.publish(msg);
     d_pub_.publish(msg_d);
 }
