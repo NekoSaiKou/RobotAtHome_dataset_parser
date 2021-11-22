@@ -18,7 +18,8 @@ if(NOT OpenCV_FOUND)
 endif()
 
 # Build Parser
-add_executable(data_parser src/DataParser.cpp)
+add_executable(data_parser src/DataParser.cpp src/Common.cpp)
+target_include_directories(data_parser PUBLIC ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(data_parser ${OpenCV_LIBS})
 
 # Build Parser ROS
@@ -29,7 +30,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 if(catkin_FOUND)
-   add_executable(data_parser_ros src/DataParserROS.cpp)
-   target_link_libraries(data_parser_ros ${OpenCV_LIBS} ${catkin_LIBRARIES})
-   target_include_directories(data_parser_ros PUBLIC ${catkin_INCLUDE_DIRS})
+   add_executable(data_parser_ros src/DataParserROS.cpp src/Common.cpp)
+   target_link_libraries(data_parser_ros PUBLIC ${OpenCV_LIBS} ${catkin_LIBRARIES})
+   target_include_directories(data_parser_ros PUBLIC ${PROJECT_SOURCE_DIR}/src ${catkin_INCLUDE_DIRS})
 endif()
