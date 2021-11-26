@@ -1,15 +1,11 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <vector>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-#include <chrono>
-#include <unistd.h>
+
 #include <cmath>
+#include <vector>
 
 #define PI M_PI
 using namespace std;

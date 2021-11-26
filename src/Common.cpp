@@ -1,5 +1,8 @@
 #include <Common.h>
 
+#include <fstream>
+#include <iostream>
+
 void LoadImages(vector<int> &vnFileindex, vector<double> &vdTimestamps, string strSessionFolder, string strSceneName, string strSensorID)
 {
     string fname(strSessionFolder+strSceneName+".txt");
