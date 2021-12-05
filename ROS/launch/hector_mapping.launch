@@ -4,6 +4,9 @@
         <arg name="base_frame" value="base_link"/>
         <arg name="pub_map_odom_transform" value="false"/>
         <arg name="scan_topic" value="scan"/>
+        <arg name="odom_frame" value="odom" />
+        <param name="pub_odometry" value="true" />
+        
         
     </include>
     <node pkg="tf" type="static_transform_publisher" name="scanmatch_to_laser" args="0 0 0 0 0 0 scanmatcher_frame laser 100"/>
