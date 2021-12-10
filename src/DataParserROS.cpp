@@ -185,85 +185,125 @@ int main(int argc, char **argv)
         int nIdxImages = 0;
         int nIdxScans = 0;
 
-        for(int i=0; i<nData; i++)
+        bool pause = false;
+        bool pause_next_step = false;
+        for(int i=0; i<nData;)
         {
-            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-
-            double tImage = vdRGBD_Timestamps[nIdxImages];
-            double tScan = vdLiDAR_Timestamps[nIdxScans];
-            double tframe = 0;
-
-            // If Image is closer, then read image
-            if(tImage < tScan)
+            if(!pause)
             {
-                tframe = tImage;
-                string ImgPrefix = RGBD_SequenceFolder + "/" + to_string(vnRGBD_Fileindex[nIdxImages]);
-                string ImgRGBpath = ImgPrefix+"_intensity.png";
-                string ImgDepthPath = ImgPrefix+"_depth.png";
+                std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
-                // Load and rotate images
-                cv::Mat mImgRGB = cv::imread(ImgRGBpath.c_str());
-                cv::rotate(mImgRGB, mImgRGB, cv::ROTATE_90_COUNTERCLOCKWISE);
-                cv::Mat mImgDepth = cv::imread(ImgDepthPath.c_str(), cv::IMREAD_ANYDEPTH);
-                cv::rotate(mImgDepth, mImgDepth, cv::ROTATE_90_COUNTERCLOCKWISE);
+                double tImage = vdRGBD_Timestamps[nIdxImages];
+                double tScan = vdLiDAR_Timestamps[nIdxScans];
+                double tframe = 0;
 
-                PubImages(rgb_pub_, d_pub_, mImgRGB, mImgDepth);
+                // If Image is closer, then read image
+                if(tImage < tScan)
+                {
+                    tframe = tImage;
+                    string ImgPrefix = RGBD_SequenceFolder + "/" + to_string(vnRGBD_Fileindex[nIdxImages]);
+                    string ImgRGBpath = ImgPrefix+"_intensity.png";
+                    string ImgDepthPath = ImgPrefix+"_depth.png";
 
-                cv::imshow("RGB", mImgRGB);
-                cv::imshow("Depth", mImgDepth);
-                nIdxImages++;
+                    // Load and rotate images
+                    cv::Mat mImgRGB = cv::imread(ImgRGBpath.c_str());
+                    cv::rotate(mImgRGB, mImgRGB, cv::ROTATE_90_COUNTERCLOCKWISE);
+                    cv::Mat mImgDepth = cv::imread(ImgDepthPath.c_str(), cv::IMREAD_ANYDEPTH);
+                    cv::rotate(mImgDepth, mImgDepth, cv::ROTATE_90_COUNTERCLOCKWISE);
+
+                    PubImages(rgb_pub_, d_pub_, mImgRGB, mImgDepth);
+
+                    cv::imshow("RGB", mImgRGB);
+                    cv::imshow("Depth", mImgDepth);
+                    nIdxImages++;
+                }
+                else
+                {
+                    tframe = tScan;
+                    string ScanFolder = LiDAR_SequenceFolder + to_string(vnLiDAR_FolderIndex[nIdxScans])+"_hokuyo_processed/";
+                    string Scanpath = ScanFolder+to_string(vnLiDAR_Fileindex[nIdxScans])+"_scan.txt";
+
+                    float max_ranges, min_ranges;
+                    vector<float> vfRanges;
+                    ReadScans(Scanpath, max_ranges, min_ranges, vfRanges);
+                    cv::Mat ScanPlot = PlotScans(max_ranges, min_ranges, vfRanges, 60);
+                    cv::Mat ScanLinePlot = PlotScanLines(max_ranges, min_ranges, vfRanges, 60);
+                    PubScans(scan_pub_, max_ranges, min_ranges, vfRanges);
+
+                    cv::imshow("Scan", ScanPlot);
+                    cv::imshow("Scan Line", ScanLinePlot);
+                    nIdxScans++;
+                }
+
+                char key = (char) cv::waitKey(1); 
+                if(key==27)
+                {
+                    break;
+                }
+                else if(key==32)
+                {
+                    pause = true;
+                }
+                else if(key==115)
+                {
+                    pause = true;
+                    pause_next_step = true;
+                }
+                else if(pause_next_step)
+                {
+                    pause = true;
+                }
+
+                std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+
+                double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+                double T=0;
+                // If there are still other data:
+                if(i<nData-1)
+                {
+                    double Tnext = 0;
+                    if(nIdxImages == nImages)
+                    {
+                        Tnext = vdLiDAR_Timestamps[nIdxScans];
+                    }
+                    else if(nIdxScans == nScans)
+                    {
+                        Tnext = vdRGBD_Timestamps[nIdxImages];
+                    }
+                    else
+                    {   
+                        double dRGBNext = vdRGBD_Timestamps[nIdxImages];
+                        double dScanNext = vdLiDAR_Timestamps[nIdxScans];
+                        Tnext = (dRGBNext < dScanNext)?dRGBNext:dScanNext;
+                    }
+                    T = Tnext-tframe;
+                }
+                else if(i>0)
+                    T = ttrack+1;
+                if(ttrack<T)
+                    usleep((T-ttrack)*1e6);
+
+                // Increase Index
+                i++;
             }
             else
             {
-                tframe = tScan;
-                string ScanFolder = LiDAR_SequenceFolder + to_string(vnLiDAR_FolderIndex[nIdxScans])+"_hokuyo_processed/";
-                string Scanpath = ScanFolder+to_string(vnLiDAR_Fileindex[nIdxScans])+"_scan.txt";
-
-                float max_ranges, min_ranges;
-                vector<float> vfRanges;
-                ReadScans(Scanpath, max_ranges, min_ranges, vfRanges);
-                cv::Mat ScanPlot = PlotScans(max_ranges, min_ranges, vfRanges, 60);
-                cv::Mat ScanLinePlot = PlotScanLines(max_ranges, min_ranges, vfRanges, 60);
-                PubScans(scan_pub_, max_ranges, min_ranges, vfRanges);
-
-                cv::imshow("Scan", ScanPlot);
-                cv::imshow("Scan Line", ScanLinePlot);
-                nIdxScans++;
-            }
-
-            if(cv::waitKey(1)==27)
-            {
-                break;
-            }
-
-            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-
-            double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
-            double T=0;
-            // If there are still other data:
-            if(i<nData-1)
-            {
-                double Tnext = 0;
-                if(nIdxImages == nImages)
+                char key = (char) cv::waitKey(1); 
+                if(key==27)
                 {
-                    Tnext = vdLiDAR_Timestamps[nIdxScans];
+                    break;
                 }
-                else if(nIdxScans == nScans)
+                else if(key==32)
                 {
-                    Tnext = vdRGBD_Timestamps[nIdxImages];
+                    pause = false;
+                    pause_next_step = false;
                 }
-                else
-                {   
-                    double dRGBNext = vdRGBD_Timestamps[nIdxImages];
-                    double dScanNext = vdLiDAR_Timestamps[nIdxScans];
-                    Tnext = (dRGBNext < dScanNext)?dRGBNext:dScanNext;
+                else if(key==115)
+                {
+                    pause = false;
+                    pause_next_step = true;
                 }
-                T = Tnext-tframe;
             }
-            else if(i>0)
-                T = ttrack+1;
-            if(ttrack<T)
-                usleep((T-ttrack)*1e6);
         }
     }
 
