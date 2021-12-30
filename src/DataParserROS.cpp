@@ -17,12 +17,15 @@ void Shutdown()
     ros::shutdown();
 }
 
-void PubScans(ros::Publisher &scan_pub_, float Max_range, float Min_range, vector<float> &vfRanges)
+void PubScans(ros::Publisher &scan_pub_, float Max_range, float Min_range, vector<float> &vfRanges, double lTstamp)
 {
     sensor_msgs::LaserScan msg;
 
     msg.header.frame_id = string("laser");
-    msg.header.stamp = ros::Time::now();
+    unsigned long secs = (unsigned long)lTstamp;
+    unsigned long nsecs = (lTstamp - secs)*1e9;
+    msg.header.stamp = ros::Time(secs, nsecs);
+    std::cout << lTstamp << " secs: " << secs << " nsecs: " << nsecs << std::endl;
     msg.angle_min = -120.032/180*PI;
     msg.angle_max = 120.032/180*PI;
     msg.angle_increment = 0.352/180*PI;
@@ -37,12 +40,14 @@ void PubScans(ros::Publisher &scan_pub_, float Max_range, float Min_range, vecto
     scan_pub_.publish(msg);
 }
 
-void PubImages(ros::Publisher &rgb_pub_, ros::Publisher &d_pub_, cv::Mat &rgb_img, cv::Mat &d_img)
+void PubImages(ros::Publisher &rgb_pub_, ros::Publisher &d_pub_, cv::Mat &rgb_img, cv::Mat &d_img, double lTstamp)
 {
     sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", rgb_img).toImageMsg();
     sensor_msgs::ImagePtr msg_d = cv_bridge::CvImage(std_msgs::Header(), "mono16", d_img).toImageMsg();
-    msg->header.stamp = ros::Time::now();
-    msg_d->header.stamp = ros::Time::now();
+    unsigned long secs = (unsigned long)lTstamp;
+    unsigned long nsecs = (lTstamp - secs)*1e9;
+    msg->header.stamp = ros::Time(secs, nsecs);
+    msg_d->header.stamp = ros::Time(secs, nsecs);
     rgb_pub_.publish(msg);
     d_pub_.publish(msg_d);
 }
@@ -110,7 +115,7 @@ int main(int argc, char **argv)
             ReadScans(Scanpath, max_ranges, min_ranges, vfRanges);
             cv::Mat ScanPlot = PlotScans(max_ranges, min_ranges, vfRanges, 60);
             cv::Mat ScanLinePlot = PlotScanLines(max_ranges, min_ranges, vfRanges, 60);
-            PubScans(scan_pub_, max_ranges, min_ranges, vfRanges);
+            PubScans(scan_pub_, max_ranges, min_ranges, vfRanges, tframe);
 
             cv::imshow("Scan", ScanPlot);
             cv::imshow("Scan Line", ScanLinePlot);
@@ -152,7 +157,7 @@ int main(int argc, char **argv)
             cv::Mat mImgDepth = cv::imread(ImgDepthPath.c_str(), cv::IMREAD_ANYDEPTH);
             cv::rotate(mImgDepth, mImgDepth, cv::ROTATE_90_COUNTERCLOCKWISE);
 
-            PubImages(rgb_pub_, d_pub_, mImgRGB, mImgDepth);
+            PubImages(rgb_pub_, d_pub_, mImgRGB, mImgDepth, tframe);
 
             cv::imshow("RGB", mImgRGB);
             cv::imshow("Depth", mImgDepth);
@@ -211,7 +216,7 @@ int main(int argc, char **argv)
                     cv::Mat mImgDepth = cv::imread(ImgDepthPath.c_str(), cv::IMREAD_ANYDEPTH);
                     cv::rotate(mImgDepth, mImgDepth, cv::ROTATE_90_COUNTERCLOCKWISE);
 
-                    PubImages(rgb_pub_, d_pub_, mImgRGB, mImgDepth);
+                    PubImages(rgb_pub_, d_pub_, mImgRGB, mImgDepth, tframe);
 
                     cv::imshow("RGB", mImgRGB);
                     cv::imshow("Depth", mImgDepth);
@@ -228,7 +233,7 @@ int main(int argc, char **argv)
                     ReadScans(Scanpath, max_ranges, min_ranges, vfRanges);
                     cv::Mat ScanPlot = PlotScans(max_ranges, min_ranges, vfRanges, 60);
                     cv::Mat ScanLinePlot = PlotScanLines(max_ranges, min_ranges, vfRanges, 60);
-                    PubScans(scan_pub_, max_ranges, min_ranges, vfRanges);
+                    PubScans(scan_pub_, max_ranges, min_ranges, vfRanges, tframe);
 
                     cv::imshow("Scan", ScanPlot);
                     cv::imshow("Scan Line", ScanLinePlot);
