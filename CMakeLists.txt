@@ -25,12 +25,18 @@ target_link_libraries(data_parser ${OpenCV_LIBS})
 # Build Parser ROS
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  tf
   sensor_msgs
   cv_bridge
+  message_filters
 )
 
 if(catkin_FOUND)
    add_executable(data_parser_ros src/DataParserROS.cpp src/Common.cpp)
    target_link_libraries(data_parser_ros PUBLIC ${OpenCV_LIBS} ${catkin_LIBRARIES})
    target_include_directories(data_parser_ros PUBLIC ${PROJECT_SOURCE_DIR}/src ${catkin_INCLUDE_DIRS})
+
+   add_executable(data_viewer_ros src/DataViewerRos.cpp)
+   target_link_libraries(data_viewer_ros PUBLIC ${OpenCV_LIBS} ${catkin_LIBRARIES})
+   target_include_directories(data_viewer_ros PUBLIC ${PROJECT_SOURCE_DIR}/src ${catkin_INCLUDE_DIRS})
 endif()
