@@ -1,0 +1,46 @@
+%YAML:1.0
+
+#--------------------------------------------------------------------------------------------
+# Camera Parameters. Adjust them!
+#--------------------------------------------------------------------------------------------
+
+# Camera calibration and distortion parameters (OpenCV) 
+Camera.fx: 610.7606201171875
+Camera.fy: 609.9207153320312
+Camera.cx: 324.8052673339844
+Camera.cy: 232.78622436523438
+
+Camera.k1: 0
+Camera.k2: 0
+Camera.p1: 0
+Camera.p2: 0
+Camera.k3: 0
+
+# Deptmap values factor
+DepthMapFactor: 1000
+
+#--------------------------------------------------------------------------------------------
+# LiDAR, Camera Parameters
+#--------------------------------------------------------------------------------------------
+Sensor.tCLtx: -0.0325
+Sensor.tCLty: 0
+Sensor.tCLtz: -0.1213
+Sensor.tCLqx: 0.5
+Sensor.tCLqy: -0.5
+Sensor.tCLqz: 0.5
+Sensor.tCLqw: 0.5
+
+#--------------------------------------------------------------------------------------------
+# ROS Parameters
+#--------------------------------------------------------------------------------------------
+ROS.LaserTopic: /slamware_ros_sdk_server_node/scan
+ROS.CameraTopic: /camera/color/image_raw
+ROS.DepthTopic: /camera/aligned_depth_to_color/image_raw
+
+#--------------------------------------------------------------------------------------------
+# Application Parameters
+#--------------------------------------------------------------------------------------------
+APP.PubLaserFrame: data_viewer_laser
+APP.PubLaserTopic: /data_viewer/Scan
+APP.PubCloudFrame: data_viewer_cloud
+APP.PubCloudTopic: /data_viewer/PointCloud
