@@ -22,3 +22,6 @@ Dataset.rgbd_sensor_id: RGBD_4
 
 # Supported scene: bathroom1 bedroom1 fullhouse1 kitchen1 livingroom1 masterroom1
 Dataset.scene: fullhouse1
+
+# Supported time stamp: dataset now
+Dataset.tstamp: now
