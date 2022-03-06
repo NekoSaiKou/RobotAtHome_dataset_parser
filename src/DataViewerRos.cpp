@@ -32,7 +32,7 @@ public:
     void PublishTF();
 
 private:
-    cv::Mat mTlc;
+    tf2::Transform mtCL;
     float fx, fy, cx, cy, invfx, invfy;
     float DepthMapFactor;
 
@@ -81,13 +81,17 @@ DataGrabber::DataGrabber(const string &strSettingsFile)
     cout << "[SLAM] Listen to topic " << mstrDepthTopic << endl;
 
     // Transformation Setting
-    float tCLtx = fSettings["Sensor.tCLtx"];
-    float tCLty = fSettings["Sensor.tCLty"];
-    float tCLtz = fSettings["Sensor.tCLtz"];
-    float tCLqx = fSettings["Sensor.tCLqx"];
-    float tCLqy = fSettings["Sensor.tCLqy"];
-    float tCLqz = fSettings["Sensor.tCLqz"];
-    float tCLqw = fSettings["Sensor.tCLqw"];
+    double tCLtx = fSettings["Sensor.tCLtx"];
+    double tCLty = fSettings["Sensor.tCLty"];
+    double tCLtz = fSettings["Sensor.tCLtz"];
+    double tCLqx = fSettings["Sensor.tCLqx"];
+    double tCLqy = fSettings["Sensor.tCLqy"];
+    double tCLqz = fSettings["Sensor.tCLqz"];
+    double tCLqw = fSettings["Sensor.tCLqw"];
+
+    tf2::Quaternion quatCL(tCLqx, tCLqy, tCLqz, tCLqw);
+    tf2::Vector3 transCL(tCLtx, tCLty, tCLtz);
+    mtCL = tf2::Transform(quatCL, transCL);
 
     fx = fSettings["Camera.fx"];
     fy = fSettings["Camera.fy"];
@@ -152,17 +156,17 @@ void DataGrabber::GrabData(const sensor_msgs::ImageConstPtr &msgRGB, const senso
 
 void DataGrabber::PublishTF()
 {
-    tf2::Matrix3x3 tf_laser_rotation(1, 0, 0,
-                                     0, 1, 0,
-                                     0, 0, 1);
-    tf2::Vector3 tf_laser_translation(0, 0, 0);
-    tf2::Transform tf_laser_to_base(tf_laser_rotation, tf_laser_translation);
-
     tf2::Matrix3x3 tf_camera_rotation( 0,  0, 1,
                                       -1,  0, 0,
                                        0, -1, 0);
     tf2::Vector3 tf_camera_translation(0, 0, 0);
     tf2::Transform tf_camera_to_base(tf_camera_rotation, tf_camera_translation);
+
+    // tf2::Matrix3x3 tf_laser_rotation(1, 0, 0,
+    //                                  0, 1, 0,
+    //                                  0, 0, 1);
+    // tf2::Vector3 tf_laser_translation(0, 0, 0);
+    tf2::Transform tf_laser_to_base(tf_camera_to_base*mtCL);
 
     static tf2_ros::TransformBroadcaster tf_broadcaster;
 
